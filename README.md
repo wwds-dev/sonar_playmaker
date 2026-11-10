@@ -7,6 +7,14 @@ standalone project) and split out into its own project doc set on
 2026-09-14 — see the parent SONAR README.md for how the Playmaker tab fits
 into the rest of the app._
 
+## Not betting advice
+
+Playmaker does arithmetic on bookmakers' published prices: their margin, where they
+disagree, and what a formula would stake if a gap were real. It is not betting advice, takes
+no bets and links to no bookmaker. Betting can lose money and can be addictive; if it stops
+being fun, stop. Gambling is for adults only, and the law where you live applies. The same
+notice is shown at the top of the Playmaker tab.
+
 ## What it does
 
 Sports prop pricing. Pick a sport and prop, paste what each book is offering,
