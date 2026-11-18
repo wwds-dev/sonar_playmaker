@@ -23,6 +23,7 @@ import math
 from dataclasses import dataclass
 
 from . import american_to_decimal, kelly_fraction
+from .devig import t_975
 
 
 #: Sources whose numbers can be checked against something. Only these may size.
@@ -43,6 +44,10 @@ class Estimate:
     high: float
     source: str
     basis: str = ""
+    #: False when the interval could not be measured (a consensus whose books
+    #: show no spread): the width is then zero because nothing was measured,
+    #: not because the probability is known, and such an estimate never stakes.
+    measured: bool = True
 
     def __post_init__(self) -> None:
         for name, value in (("probability", self.probability),
@@ -89,7 +94,7 @@ def from_market(odds: int, opposing: int, method: str = "shin") -> Estimate:
                     f"{method} devig of {odds:+d} / {opposing:+d}")
 
 
-def from_consensus(cons, index: int, confidence: float = 1.96) -> Estimate:
+def from_consensus(cons, index: int, confidence: float | None = None) -> Estimate:
     """Cross-book consensus, with an interval from how much the books disagree.
 
     This is the one estimate in Playmaker today whose uncertainty is measured
@@ -99,10 +104,19 @@ def from_consensus(cons, index: int, confidence: float = 1.96) -> Estimate:
     p = cons.probability[index]
     se = cons.standard_error(index)
     if not se or math.isnan(se):
-        return Estimate(p, p, p, "consensus", f"{cons.books} book(s), no spread")
+        # Books that copy each other's price, or a single book: the spread is
+        # zero because nothing varied, which says nothing about how sure the
+        # consensus is. Full Kelly at a zero-width "low end" staked 2.38% on
+        # three books (docs/specs/readiness-h3-h4.md); this stakes nothing.
+        return Estimate(p, p, p, "consensus", f"{cons.books} book(s), no spread",
+                        measured=False)
+    if confidence is None:
+        confidence, how = t_975(cons.books - 1), f"t, {cons.books - 1} df"
+    else:
+        how = f"z {confidence:g}"
     half = confidence * se
     return Estimate(p, max(0.0, p - half), min(1.0, p + half), "consensus",
-                    f"{cons.books} books, +/-{half*100:.2f}pts")
+                    f"{cons.books} books, +/-{half*100:.2f}pts ({how})")
 
 
 def from_narrative(probability: float | None, confidence: str = "") -> Estimate | None:
@@ -145,7 +159,7 @@ def kelly(estimate: Estimate, odds: int, cap: float = MAX_FRACTION) -> float:
     produces no bet, which is the correct answer and the one full Kelly on a
     point estimate never gives.
     """
-    if not estimate.can_size:
+    if not estimate.can_size or not estimate.measured:
         return 0.0
     return min(cap, kelly_fraction(estimate.low, odds))
 
@@ -174,6 +188,9 @@ def assess(estimate: Estimate, odds: int, fair: float) -> Assessment:
     fraction = kelly(estimate, odds)
     if not estimate.can_size:
         note = ("narrative source — shown for context, not used for sizing")
+    elif not estimate.measured:
+        note = ("no stake: the other books show no spread, so how sure the "
+                "consensus is cannot be measured")
     elif fraction <= 0.0:
         note = ("no stake: the low end of the interval has no edge at this price")
     else:

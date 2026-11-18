@@ -134,12 +134,15 @@ tab rebuilt around the cross-book screen.
 
 ### Found by SONAR's code-level readiness audit (2026-11-18, SONAR `docs/audit/code-readiness-2026-11-18.md`)
 
-- [ ] `P1` `bug` `@ai` **A zero-width interval gets full Kelly.** `from_consensus`
+- [x] `P1` `bug` `@ai` **A zero-width interval gets full Kelly.** `from_consensus`
       returns low = p = high when the peer SE is 0 or NaN (`staking.py:101-102`)
       and a NaN z counts as an outlier (`devig.py:259`): books A, B at -110/-110
       and C at +105/-125 stake 2.38% "at the low end of the interval (50.0%)".
       Two peers also use z = 1.96 where 1 df needs about 12.7. No stake under
       three peers or zero spread; t-quantile for small peer counts. Audit H3.
+      **Done 2026-11-18:** zero spread stakes nothing (`Estimate.measured`),
+      the interval and the outlier flag use Student's t (`devig.t_975`);
+      SONAR spec `readiness-h3-h4`.
 - [ ] `P2` `bug` `@ai` **The LLM prompt contradicts "commentary only".**
       `SYSTEM_PROMPT` (`__init__.py:355`) says the stated percentage is "the
       number the app converts into expected value" (false) and asks for a Lean;

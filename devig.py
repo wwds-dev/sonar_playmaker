@@ -187,6 +187,30 @@ def method_spread(odds: tuple[int, ...], index: int) -> tuple[float, float]:
 
 
 # --------------------------------------------------------------------------- #
+# Student's t, for intervals from a handful of books
+# --------------------------------------------------------------------------- #
+#: Two-sided 95% critical values of Student's t by degrees of freedom. A
+#: consensus of n books estimates its spread from n - 1 degrees of freedom, and
+#: with two or three books 1.96 is several times too narrow (df 1 needs 12.71).
+_T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365,
+         8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179, 13: 2.160,
+         14: 2.145, 15: 2.131, 16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093,
+         20: 2.086, 21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.060,
+         26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045, 30: 2.042, 40: 2.021,
+         60: 2.000, 120: 1.980}
+
+
+def t_975(df: int) -> float:
+    """Two-sided 95% t critical value; a df between table rows takes the row
+    below it (fewer degrees of freedom: the wider, safer interval)."""
+    if df < 1:
+        return float("inf")
+    if df > 120:
+        return 1.960
+    return _T975[max(k for k in _T975 if k <= df)]
+
+
+# --------------------------------------------------------------------------- #
 # Consensus across books — the Kaunitz arithmetic
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
@@ -253,10 +277,17 @@ class Opportunity:
     edge: float           # fair - offered, in probability points
     expected_value: float  # per unit staked
     z: float              # how far out the price is, in consensus SEs
+    peers: int = 0        # books in the leave-one-out consensus (0: unknown)
 
     @property
     def is_outlier(self) -> bool:
-        return self.edge > 0.0 and (math.isnan(self.z) or abs(self.z) >= 2.0)
+        """Out of line by more than the peers' own spread can explain: |z| past
+        Student's t for their number (2.0 when unknown). No measured spread
+        (z undefined) is not an outlier: there is nothing to be out of line with
+        beyond one exact copy of the same price."""
+        if self.edge <= 0.0 or math.isnan(self.z):
+            return False
+        return abs(self.z) >= (t_975(self.peers - 1) if self.peers else 2.0)
 
 
 def screen(quotes: list[Quote], method: str = DEFAULT_METHOD,
@@ -288,7 +319,7 @@ def screen(quotes: list[Quote], method: str = DEFAULT_METHOD,
             found.append(Opportunity(
                 book=quote.book, outcome=i, odds=price, offered=offered,
                 fair=fair, edge=edge, expected_value=fair * net - (1.0 - fair),
-                z=z,
+                z=z, peers=peers.books,
             ))
     found.sort(key=lambda o: o.expected_value, reverse=True)
     return found

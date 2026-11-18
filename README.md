@@ -68,7 +68,7 @@ devigging and staking added in v2 are their own modules.
 | `american_to_decimal()` / `implied_probability()` | Odds conversion. |
 | `remove_vig()` | The proportional method, kept for reference. `devig.py` is what you want. |
 | `devig.py` | Three devig methods (multiplicative, Clarke power, Shin), cross-book consensus, the outlier screen, and the price parser. |
-| `staking.py` | `Estimate` (probability + interval + source), Kelly sized at the interval's low end, and the rule that a narrative source cannot size a bet. |
+| `staking.py` | `Estimate` (probability + interval + source), Kelly sized at the interval's low end, and the rule that a narrative source cannot size a bet. A consensus interval uses Student's t for the number of books; when the other books show no spread it is not measured and stakes nothing. |
 | `expected_value()` / `kelly_fraction()` / `edge_versus_market()` | The deterministic betting arithmetic. |
 | `SYSTEM_PROMPT` / `build_prompt()` | The LLM system prompt and the per-prop user message it's paired with — numbers only, no invented data. |
 | `parse_analysis()` / `Analysis` | Parses the model's response back into a structured result. |

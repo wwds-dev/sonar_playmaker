@@ -291,6 +291,15 @@ rating deviation (§3) over plain Elo.
 it set the stake. A point estimate with no error bar is what created the
 current problem.
 
+**As built (2026-11-18).** The cross-book consensus interval is
+`t(0.975, books - 1)` standard errors each side, not 1.96: with two peer books
+(one degree of freedom) t is 12.7. Books that show no spread at all (copies of
+one price, or a single book) give a zero-width interval because nothing was
+measured, so that estimate is flagged unmeasured and stakes nothing; it had
+staked full Kelly at the "low end". The outlier flag uses the same t, and a
+price with no measured spread is not called an outlier. SONAR
+`docs/specs/readiness-h3-h4.md`.
+
 ---
 
 ## 10. What data we can actually get
