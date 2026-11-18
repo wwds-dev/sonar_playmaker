@@ -132,6 +132,36 @@ tab rebuilt around the cross-book screen.
       pick time, compare against the close, report the distribution. Measurable
       within days on every pick, unlike P&L. `MODELS.md` §2.
 
+### Found by SONAR's code-level readiness audit (2026-11-18, SONAR `docs/audit/code-readiness-2026-11-18.md`)
+
+- [ ] `P1` `bug` `@ai` **A zero-width interval gets full Kelly.** `from_consensus`
+      returns low = p = high when the peer SE is 0 or NaN (`staking.py:101-102`)
+      and a NaN z counts as an outlier (`devig.py:259`): books A, B at -110/-110
+      and C at +105/-125 stake 2.38% "at the low end of the interval (50.0%)".
+      Two peers also use z = 1.96 where 1 df needs about 12.7. No stake under
+      three peers or zero spread; t-quantile for small peer counts. Audit H3.
+- [ ] `P2` `bug` `@ai` **The LLM prompt contradicts "commentary only".**
+      `SYSTEM_PROMPT` (`__init__.py:355`) says the stated percentage is "the
+      number the app converts into expected value" (false) and asks for a Lean;
+      the prompt gets only the first book's price (`ui/app.py:4354`). Reword,
+      drop the percentage, pass the fair price and screen. Audit M6.
+- [ ] `P2` `bug` `@ai` **Impossible American odds are accepted.** `_ODDS`
+      (`devig.py:300`) and `american_to_decimal` (`__init__.py:274`) take
+      |odds| < 100: "-50" becomes decimal 3.0, a typo "-11" makes a phantom
+      edge. Raise on |odds| < 100. Audit M7.
+- [ ] `P2` `bug` `@ai` **Duplicate book names break leave-one-out.** `exclude`
+      drops every row with that name (`devig.py:225`); "Same, Same, Other"
+      prices each row against one book, z = NaN, flagged. Reject duplicate
+      names in `parse_quotes`. Audit M8.
+- [ ] `P3` `testing` `@ai` **Tests for the above and for the stake path.** No
+      test covers H3, M7 or M8, and none asserts `_playmaker_done` leaves the
+      stake cells alone. Also: the "best edge" cell shows `opportunities[0]`
+      even when it is not an outlier (`ui/app.py:4279`); `results._fetch_token`
+      returns `[]` after retries, so a `measure` can run on partial history
+      silently (`results.py:289-290`); `calibrated_estimate` is called only from
+      tests, so README's model-to-stake route is inert until a sport uses it.
+      Audit L5.
+
 ---
 
 ## v1 — shipped
